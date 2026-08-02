@@ -7,10 +7,19 @@ authors = [
     { name = "ravinderdhokwal", email = "ravindercodes@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "alembic>=1.18.5",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.141.1",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "python-dotenv>=1.2.2",
+    "sqlalchemy[asyncio]>=2.0.51",
+    "uvicorn[standard]>=0.52.1",
+]
 
 [project.scripts]
-url-shortener = "url_shortener:main"
+start-server = "url_shortener:main"
 
 [build-system]
 requires = ["uv_build>=0.10.11,<0.11.0"]
