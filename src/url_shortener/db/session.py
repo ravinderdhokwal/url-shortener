@@ -1,10 +1,10 @@
-from curses import echo
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from url_shortener.core.config import settings
 
 async_engine = create_async_engine(
     settings.DATABASE_URL,
+    pool_pre_ping=True,
     echo = settings.IS_DEV_ENV
 )
 
@@ -16,4 +16,8 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def get_db():
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
