@@ -9,6 +9,7 @@ from alembic import context
 
 from url_shortener.core.config import settings
 from url_shortener.db.base import Base
+import url_shortener.models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
