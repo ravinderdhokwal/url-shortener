@@ -8,6 +8,7 @@ from url_shortener.core.config import settings
 from url_shortener.models import URLModel
 from url_shortener.repos import url_repo
 from url_shortener.schemas.url_schema import URLCreate
+from url_shortener.utils.short_code_utils import short_code_generator
 
 logger = logging.getLogger()
 
@@ -44,7 +45,7 @@ async def generate_short_url(db: AsyncSession, url_in: URLCreate) -> URLModel:
     last_exception: IntegrityError | None = None
 
     for attempt in range(MAX_GENERATION_RETRIES):
-        candidate_short_code = "1"
+        candidate_short_code = short_code_generator()
 
         try:
             return await url_repo.save_url(db, url_in, candidate_short_code)
@@ -56,7 +57,7 @@ async def generate_short_url(db: AsyncSession, url_in: URLCreate) -> URLModel:
             # state until explicitly rolled back. Without this, the next
             # attempt's db.add()/commit() would immediately fail too,
             # for an unrelated reason (session state, not a new collision).
-            db.rollback()
+            await db.rollback()
             last_exception = e
 
             logger.warning(
