@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import BigInteger, Boolean, DateTime, String, Text, func
+import uuid
+from sqlalchemy import Boolean, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from url_shortener.db.base import Base
 
@@ -8,7 +9,7 @@ from url_shortener.db.base import Base
 class URLModel(Base):
     __tablename__ = "urls"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     short_code: Mapped[str] = mapped_column(String(10), unique=True, index=True, nullable=False)
     original_url: Mapped[str] = mapped_column(Text, nullable=False)
 
