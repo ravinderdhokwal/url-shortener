@@ -11,7 +11,7 @@ class URLResponse(BaseModel):
     # directly and FastAPI serializes it through this schema.
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     short_code: str
     original_url: str
     is_active: bool
