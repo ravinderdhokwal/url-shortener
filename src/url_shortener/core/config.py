@@ -7,8 +7,15 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
 
-    ENVIRONMENT: str = "prod"
+    DEFAULT_SHORT_CODE_LENGTH: int = 7
+    MAX_SHORT_CODE_GENERATION_ATTEMPTS: int = 3
 
+    API_VERSION: int = 1
+    @property
+    def API_VERSION_PREFIX(self) -> str:
+        return f"/api/v{self.API_VERSION}"
+
+    ENVIRONMENT: str = "prod"
     @property
     def IS_DEV_ENV(self) -> bool:
         return self.ENVIRONMENT.lower() in ("dev", "development", "local")
