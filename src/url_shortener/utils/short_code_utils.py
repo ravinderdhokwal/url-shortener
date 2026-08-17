@@ -38,6 +38,3 @@ def short_code_generator() -> str:
     """
 
     return "".join(secrets.choice(_ALPHABET) for _ in range(settings.DEFAULT_SHORT_CODE_LENGTH))
-
-
-print(short_code_generator())
