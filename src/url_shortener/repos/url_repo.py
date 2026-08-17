@@ -34,7 +34,7 @@ async def save_url(db: AsyncSession, url_in: URLCreate, short_code: str) -> URLM
     )
 
     db.add(url_object)
-    db.flush()
+    await db.flush()
     # refresh() re-fetches DB-generated fields (id, created_at, etc.)
     # so the returned object matches exactly what's now in the row.
     await db.refresh(url_object)
