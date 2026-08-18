@@ -16,7 +16,7 @@ from url_shortener.core.config import settings
 # base62 alphabet: 0-9, a-z, A-Z (62 characters total)
 _ALPHABET = string.digits + string.ascii_lowercase + string.ascii_uppercase
 
-def short_code_generator() -> str:
+def generate_short_code() -> str:
     """
     Generate a random base62 short code.
 
@@ -36,5 +36,7 @@ def short_code_generator() -> str:
     Mixing "generate" and "check if free" here would reintroduce the
     race condition we're trying to avoid (see service layer for why).
     """
-
-    return "".join(secrets.choice(_ALPHABET) for _ in range(settings.DEFAULT_SHORT_CODE_LENGTH))
+    return "".join(
+        secrets.choice(_ALPHABET)
+        for _ in range(settings.DEFAULT_SHORT_CODE_LENGTH)
+    )
