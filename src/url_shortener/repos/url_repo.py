@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from url_shortener.models import URLModel
 from url_shortener.schemas.url_schema import URLCreate
 
+async def check_original_url_existence(db: AsyncSession, original_url: str) -> URLModel | None:
+    result = await db.execute(select(URLModel).where(URLModel.original_url == original_url))
+    return result.scalar_one_or_none()
 
 async def fetch_all_urls_from_db(db: AsyncSession) -> List[URLModel]:
     result = await db.execute(select(URLModel))
