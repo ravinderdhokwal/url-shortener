@@ -1,4 +1,5 @@
 import logging
+from turtle import st
 from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -8,7 +9,7 @@ from url_shortener.core.config import settings
 from url_shortener.models import URLModel
 from url_shortener.repos import url_repo
 from url_shortener.schemas.url_schema import URLCreate
-from url_shortener.utils.short_code_utils import short_code_generator
+from url_shortener.utils.short_code_utils import generate_short_code
 
 logger = logging.getLogger()
 
@@ -42,10 +43,17 @@ async def generate_short_url(db: AsyncSession, url_in: URLCreate) -> URLModel:
     raises when a collision occurs.
     """
 
+    short_url_already_exists = await url_repo.check_original_url_existence(db, url_in.original_url)
+    if short_url_already_exists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Short URL already exists for the entered url",
+        )
+
     last_exception: IntegrityError | None = None
 
     for attempt in range(MAX_GENERATION_RETRIES):
-        candidate_short_code = short_code_generator()
+        candidate_short_code = generate_short_code()
 
         try:
             return await url_repo.save_url(db, url_in, candidate_short_code)
