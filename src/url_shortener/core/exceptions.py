@@ -1,3 +1,6 @@
+from fastapi import status
+
+
 class AppException(Exception):
     def __init__(self, message: str, status_code: int = 400, data: dict | list | None = None):
         self.message = message
@@ -19,3 +22,7 @@ class ConflictError(AppException):
 class InternalServerError(AppException):
     def __init__(self, message: str = "Internal Server Error"):
         super().__init__(message, status_code=500)
+
+class ResourceInactiveError(AppException):
+    def __init__(self, message: str = "Resource Inactive"):
+        super().__init__(message, status_code=410)
