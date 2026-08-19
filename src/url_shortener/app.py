@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from url_shortener.api import api_router
+from url_shortener.api import api_router, redirect_router
 from url_shortener.core.config import settings
 from url_shortener.core.exceptions import AppException
 from url_shortener.db.session import async_engine, get_db
@@ -58,6 +58,8 @@ def create_app() -> FastAPI:
             status_code=500,
             content={"error": str(exc) if settings.IS_DEV_ENV else "INTERNAL SERVER ERROR"}
         )
+    
+    app.include_router(redirect_router)
 
     return app
 
