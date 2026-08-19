@@ -17,6 +17,7 @@ WalUrl accepts a long URL, persists a unique base62 short code, and redirects cl
 - Alembic migrations against PostgreSQL
 - Environment-driven configuration (`pydantic-settings`)
 - Structured application errors (`AppException` hierarchy)
+- Pytest suite for API, service, repository, and short-code helpers (in-memory SQLite; no Postgres required)
 
 ---
 
@@ -31,6 +32,7 @@ WalUrl accepts a long URL, persists a unique base62 short code, and redirects cl
 | Database | PostgreSQL 16 via `asyncpg` |
 | Migrations | Alembic |
 | Config | pydantic-settings, `.env` |
+| Tests | pytest + pytest-asyncio, httpx, aiosqlite |
 
 ---
 
@@ -74,13 +76,17 @@ Short codes are **not** guaranteed unique at generation time. The `urls.short_co
 git clone <repository-url>
 cd url_shortener
 
-uv sync
+uv sync --group dev
 ```
 
-### 2. Start PostgreSQL
+`uv sync` alone installs runtime dependencies. `--group dev` also installs pytest and the other test extras.
+
+### 2. Start PostgreSQL (host-run API)
+
+To run the API on the host and only the database in Docker:
 
 ```bash
-docker compose up -d
+docker compose up -d postgres
 ```
 
 This starts Postgres 16 as `walurl-postgres-db`:
@@ -129,6 +135,38 @@ The process binds `0.0.0.0:${PORT}` (default **7007**).
 | OpenAPI | http://localhost:7007/docs |
 | ReDoc | http://localhost:7007/redoc |
 | Health | http://localhost:7007/health |
+
+---
+
+## Tests
+
+The suite lives under `tests/` and does **not** need PostgreSQL, Docker, or a `.env` file. `tests/conftest.py` sets `DATABASE_URL` to in-memory SQLite (`sqlite+aiosqlite://`) before the app is imported, so a local Postgres URL in `.env` is not used.
+
+| Area | File | What it covers |
+| --- | --- | --- |
+| HTTP | `tests/test_api.py` | Health, create (`201`), duplicate original URL (`409`), validation (`422`), list (`200` / empty `404`), redirect (`302`), unknown / inactive / expired codes (`404` / `410`) |
+| Service | `tests/test_url_service.py` | Lookup, inactive/expiry rules, conflict on existing original URL, short-code collision retries, exhausted retry budget |
+| Repository | `tests/test_url_repo.py` | Save, fetch by short code, original-URL existence check, list |
+| Utils / schemas | `tests/test_short_code_utils.py`, `tests/test_schemas.py` | Base62 length and alphabet; Pydantic min-length and `from_attributes` |
+
+Install the `dev` group, then run pytest from the project root:
+
+```bash
+uv sync --group dev
+uv run pytest
+```
+
+Useful variants:
+
+```bash
+uv run pytest -q
+uv run pytest tests/test_api.py
+uv run pytest -k redirect
+```
+
+SQLite stores `DateTime(timezone=True)` without tzinfo. A load hook in `conftest.py` re-attaches UTC on `expires_at` so expiry checks match PostgreSQL `TIMESTAMPTZ` behavior. That hook is test-only.
+
+Pytest options (`asyncio_mode = auto`, `testpaths = ["tests"]`) are in `pyproject.toml`.
 
 ---
 
@@ -295,8 +333,8 @@ uv run alembic downgrade -1
 url_shortener/
 ├── alembic/                    # Migration env and revisions
 ├── alembic.ini
-├── docker-compose.yml          # Local PostgreSQL only
-├── pyproject.toml
+├── docker-compose.yml          # API + PostgreSQL
+├── pyproject.toml              # Runtime deps, uv `dev` group, pytest config
 ├── src/url_shortener/
 │   ├── main.py                 # Uvicorn entry (`start-server`)
 │   ├── app.py                  # FastAPI factory, health, exception handlers
@@ -308,6 +346,7 @@ url_shortener/
 │   ├── schemas/
 │   ├── services/
 │   └── utils/                  # Base62 generator, messages
+├── tests/                      # Pytest suite (in-memory SQLite)
 └── .env.example
 ```
 
@@ -324,7 +363,8 @@ url_shortener/
 - **Redirects:** responses are **302**. That is correct for mutable mappings (inactive/expiry). Use 301 only if you intentionally want caches and browsers to pin the destination forever.
 - **Listing endpoint:** `GET /api/v1/url` returns the full table with no pagination or auth. Do not expose it publicly without access control.
 - **Collision space:** 7-character base62 is large; uniqueness still depends on the unique index and retries. Raising `DEFAULT_SHORT_CODE_LENGTH` requires a matching column width and a migration.
-- **This repository** ships compose for **Postgres only**. Containerizing the API, adding CI, rate limiting, and authentication are deployment concerns not included in the current tree.
+- **CI:** automated test runs in CI are not wired up yet. Run `uv run pytest` locally (or in your own pipeline) before merging.
+- **Rate limiting and authentication** are not included in this repository.
 
 ---
 

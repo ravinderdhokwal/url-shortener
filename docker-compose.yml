@@ -1,19 +1,29 @@
-name: postgres-db
-
 services:
   postgres:
     image: postgres:16
-    container_name: walurl-postgres-db
-    restart: on-failure
+    container_name: url-shortener-postgres-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: walurl
+      POSTGRES_DB: url-shortener
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  
+  redis:
+    image: redis:8
+    container_name: url-shortener-redis-store
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
 volumes:
   postgres_data:
     name: postgres_data
+  redis_data:
+    driver: local
