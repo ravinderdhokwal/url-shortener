@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from url_shortener.api import api_router
 from url_shortener.core.config import settings
+from url_shortener.core.exceptions import AppException
 from url_shortener.db.session import async_engine, get_db
 
 logger = logging.getLogger(settings.APPLICATION_NAME)
@@ -37,11 +38,26 @@ def create_app() -> FastAPI:
                 content={"status": "error", "database": "unreachable"}
             )
     
+    @app.exception_handler(AppException)
+    async def app_exception_handler(request: Request, exc: AppException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "message": exc.message,
+                "error": type(exc).__name__,
+                "data": exc.data if exc.data else None
+            }
+        )
+
+
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
         logger.exception("UNHANDLED EXCEPTION", extra={"path": request.url.path})
-        detail = str(exc) if settings.IS_DEV_ENV else "INTERNAL SERVER ERROR"
-        return JSONResponse(status_code=500, content={"error": detail})
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(exc) if settings.IS_DEV_ENV else "INTERNAL SERVER ERROR"}
+        )
 
     return app
 
