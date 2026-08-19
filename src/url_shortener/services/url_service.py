@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import logging
 from typing import List
 from fastapi import HTTPException, status
@@ -5,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from url_shortener.core.config import settings
-from url_shortener.core.exceptions import ConflictError, InternalServerError, NotFoundError
+from url_shortener.core.exceptions import ConflictError, InternalServerError, NotFoundError, ResourceInactiveError
 from url_shortener.models import URLModel
 from url_shortener.repos import url_repo
 from url_shortener.schemas.url_schema import URLRequestSchema, URLResponseSchema
@@ -22,6 +23,20 @@ async def fetch_all_url(db: AsyncSession) -> List[URLModel]:
         raise NotFoundError(Messages.NO_SHORT_URL_IN_DB)
     
     return all_url_objects
+
+async def resolve_original_url(db: AsyncSession, short_code: str) -> str:
+    url_object = await url_repo.fetch_original_url_using_short_code(db, short_code)
+
+    if not url_object:
+        raise NotFoundError(Messages.NO_SHORT_CODE)
+    
+    if not url_object.is_active:
+        raise ResourceInactiveError(Messages.SHORT_URL_INACTIVE)
+    
+    if url_object.expires_at and url_object.expires_at < datetime.now(timezone.utc):
+        raise ResourceInactiveError(Messages.SHORT_URL_EXPIRED)
+    
+    return url_object.original_url
 
 async def generate_short_url(db: AsyncSession, url_in: URLRequestSchema) -> URLModel:
 

@@ -14,6 +14,10 @@ async def fetch_all_urls_from_db(db: AsyncSession) -> List[URLModel]:
     result = await db.execute(select(URLModel))
     return list(result.scalars().all())
 
+async def fetch_original_url_using_short_code(db: AsyncSession, short_code: str) -> URLModel | None:
+    result = await db.execute(select(URLModel).where(URLModel.short_code == short_code))
+    return result.scalar_one_or_none()
+
 async def save_url(db: AsyncSession, url_in: URLRequestSchema, short_code: str) -> URLModel:
     """
     Insert a new URL row with the given short_code.
@@ -43,3 +47,4 @@ async def save_url(db: AsyncSession, url_in: URLRequestSchema, short_code: str) 
     await db.refresh(url_object)
 
     return url_object
+
