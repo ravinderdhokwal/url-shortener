@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from url_shortener.models import URLModel
-from url_shortener.schemas.url_schema import URLCreate
+from url_shortener.schemas.url_schema import URLRequestSchema
 
 async def check_original_url_existence(db: AsyncSession, original_url: str) -> URLModel | None:
     result = await db.execute(select(URLModel).where(URLModel.original_url == original_url))
@@ -14,7 +14,7 @@ async def fetch_all_urls_from_db(db: AsyncSession) -> List[URLModel]:
     result = await db.execute(select(URLModel))
     return list(result.scalars().all())
 
-async def save_url(db: AsyncSession, url_in: URLCreate, short_code: str) -> URLModel:
+async def save_url(db: AsyncSession, url_in: URLRequestSchema, short_code: str) -> URLModel:
     """
     Insert a new URL row with the given short_code.
 

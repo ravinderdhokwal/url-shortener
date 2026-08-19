@@ -1,4 +1,4 @@
-from url_shortener.api.v1.router import api_router_v1
+from url_shortener.api.router import api_router_v1
 
 api_router = api_router_v1
 
