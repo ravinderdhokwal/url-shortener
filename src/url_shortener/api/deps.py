@@ -10,5 +10,6 @@ through every endpoint file's imports.
 """
 
 from url_shortener.db.session import get_db
+from url_shortener.db.redis import redis_client
 
-__all__ = ["get_db"]
+__all__ = ["get_db", "redis_client"]
