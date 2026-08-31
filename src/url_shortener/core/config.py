@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     def IS_DEV_ENV(self) -> bool:
         return self.ENVIRONMENT.lower() in ("dev", "development", "local")
 
+    PUBLIC_BASE_URL: str = f"localhost:{PORT}"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     # extra="ignore" -> ignore any environment variables that are not 
     # defined in the Settings class, necessary to pass it here. Without it,
