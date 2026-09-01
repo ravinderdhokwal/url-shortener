@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
 import logging
 from typing import List
-from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from url_shortener.core.config import settings
@@ -10,6 +8,7 @@ from url_shortener.core.exceptions import ConflictError, InternalServerError, No
 from url_shortener.models import URLModel
 from url_shortener.repos import url_repo
 from url_shortener.schemas.url_schema import URLRequestSchema, URLResponseSchema
+from url_shortener.utils import redis_utils
 from url_shortener.utils.message_utils import Messages
 from url_shortener.utils.short_code_utils import generate_short_code
 
@@ -25,6 +24,13 @@ async def fetch_all_url(db: AsyncSession) -> List[URLModel]:
     return all_url_objects
 
 async def resolve_original_url(db: AsyncSession, short_code: str) -> str:
+
+    cache_key = redis_utils.get_cache_key(short_code)
+
+    cached_record = await redis_utils.get_cached_record(cache_key)
+    if cached_record: 
+        return redis_utils.deserialize_url_record(cached_record)
+
     url_object = await url_repo.fetch_original_url_using_short_code(db, short_code)
 
     if not url_object:
@@ -35,6 +41,8 @@ async def resolve_original_url(db: AsyncSession, short_code: str) -> str:
     
     if url_object.expires_at and url_object.expires_at < datetime.now(timezone.utc):
         raise ResourceInactiveError(Messages.SHORT_URL_EXPIRED)
+
+    redis_utils.set_cached_record(cache_key, redis_utils.serialize_url_record(url_object), settings.REDIS_TTL_SECONDS)
     
     return url_object.original_url
 
